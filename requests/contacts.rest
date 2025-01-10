@@ -1,0 +1,33 @@
+# Home
+GET http://localhost:3001/
+
+###
+
+# Info
+GET http://localhost:3001/info
+
+###
+
+# Get all contacts
+GET http://localhost:3001/api/persons
+
+###
+
+# Get contact by ID
+GET http://localhost:3001/api/persons/1
+
+###
+
+# Create new contact
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "number": "123-456-7890"
+}
+
+###
+
+# Delete a contact by ID
+DELETE http://localhost:3001/api/persons/5
