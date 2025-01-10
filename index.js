@@ -92,6 +92,29 @@ app.post("/api/persons", (request, response) => {
   response.json(contact);
 });
 
+// Update
+app.put("/api/persons/:id", (request, response) => {
+  const id = request.params.id;
+  const body = request.body;
+
+  if (!body.name || !body.number) {
+    return response.status(400).json({ error: "Name or number is missing" });
+  }
+  const contactIndex = contacts.findIndex((contact) => contact.id === id);
+  const isDuplicate = contacts.find((contact) => contact.name === body.name);
+
+  if (isDuplicate) {
+    const updatedContact = {
+      ...contacts[contactIndex],
+      name: body.name,
+      number: body.number,
+    };
+    contacts[contactIndex] = updatedContact;
+
+    response.json(updatedContact);
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
