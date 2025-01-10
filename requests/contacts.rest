@@ -29,5 +29,16 @@ Content-Type: application/json
 
 ###
 
+# Try to create a duplicate contact
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "number": "987-654-3210"
+}
+
+###
+
 # Delete a contact by ID
 DELETE http://localhost:3001/api/persons/5

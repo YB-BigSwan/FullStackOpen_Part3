@@ -78,7 +78,7 @@ app.post("/api/persons", (request, response) => {
 
   const contact = {
     id: generateId(),
-    content: body.name,
+    name: body.name,
     number: body.number,
   };
 
