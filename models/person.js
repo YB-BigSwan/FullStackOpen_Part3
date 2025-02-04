@@ -17,10 +17,19 @@ const personSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    minLength: 3,
   },
   number: {
     type: String,
     required: true,
+    minLength: 8,
+    validate: {
+      validator: function (v) {
+        return /^\d{2,3}-\d{4,}/.test(v);
+      },
+      message:
+        "The phone number should have 2-3 digits, a hyphen, and at least 4 digits. (e.g., 867-5309)",
+    },
   },
 });
 
