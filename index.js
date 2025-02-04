@@ -5,20 +5,16 @@ const cors = require("cors");
 const Person = require("./models/person");
 const app = express();
 
-let contacts = require("./phonebook.json");
-
 // Middleware init
+app.use(express.static("dist"));
 app.use(express.json());
+app.use(cors());
 
 // Logging init
 morgan.token("body", (request) => JSON.stringify(request.body, null, 2));
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
-
-app.use(cors());
-
-app.use(express.static("dist"));
 
 // Routes
 
@@ -28,105 +24,95 @@ app.get("/", (request, response) => {
 });
 
 //Info
-app.get("/info", (request, response) => {
-  response.send(
-    `<p>Phonebook has info for ${contacts.length} people</p> 
+app.get("/info", (request, response, next) => {
+  Person.find({})
+    .then((persons) => {
+      response.send(
+        `<p>Phonebook has info for ${persons.length} people</p> 
     <br/> 
     <p>${new Date()}</p>`
-  );
+      );
+    })
+    .catch((error) => next(error));
 });
 
 // Get all
-app.get("/api/persons", (request, response) => {
-  Person.find({}).then((persons) => {
-    response.json(persons);
-  });
+app.get("/api/persons", (request, response, next) => {
+  Person.find({})
+    .then((persons) => {
+      response.json(persons);
+    })
+    .catch((error) => next(error));
 });
 
 // Get by ID
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/persons/:id", (request, response, next) => {
   const id = request.params.id;
-  const person = Person.findById(id)
+  Person.findById(id)
     .then((person) => {
-      if (person) {
-        response.json(person);
-      } else {
-        response.status(404).end();
-      }
+      response.json(person);
     })
-    .catch((error) => {
-      console.error(error);
-      response.status(400).send({ error: "Invalid or malformed ID" });
-    });
+    .catch((error) => next(error));
 });
 
 // Delete by ID
 app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  Person.findByIdAndDelete(id)
+  Person.findByIdAndDelete(request.params.id)
     .then((result) => {
-      if (result) {
-        response.status(204).end();
-      } else {
-        response.status(404).send({ error: "Person not found" });
-      }
+      response.status(204).end();
     })
-    .catch((error) => {
-      console.error(error);
-      response.status(400).send({ error: "Invalid or malformed ID" });
-    });
+    .catch((error) => next(error));
 });
 
-// ID gen
-const generateId = () => {
-  const maxId =
-    contacts.length > 0 ? Math.max(...contacts.map((c) => Number(c.id))) : 0;
-
-  return String(maxId + 1);
-};
-
 // Create
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
-
-  if (!body.name || !body.number) {
-    return response.status(400).json({ error: "Name or number is missing" });
-  }
-
-  const isDuplicate = contacts.find((contact) => contact.name === body.name);
-  if (isDuplicate) {
-    return response.status(400).json({
-      error: `${isDuplicate.name} already exists in the phonebook. Names must be unique.`,
-    });
-  }
 
   const person = new Person({
     name: body.name,
     number: body.number,
   });
 
-  person.save().then((savedPerson) => {
-    response.json(savedPerson);
-  });
+  person
+    .save()
+    .then((savedPerson) => {
+      response.json(savedPerson);
+    })
+    .catch((error) => next(error));
 });
 
 // Update
-app.put("/api/persons/:id", (request, response) => {
+app.put("/api/persons/:id", (request, response, next) => {
   const id = request.params.id;
   const { name, number } = request.body;
 
-  if (!name || !number) {
-    return response.status(400).json({ error: "Name or number is missing" });
+  Person.findByIdAndUpdate(id, { name, number }, { new: true })
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
+});
+
+// Handle unknown endpoints
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "Unknown endpoint " });
+};
+app.use(unknownEndpoint);
+
+// Error handler
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
   }
 
-  Person.findOne({ name }).then((existingPerson) => {
-    if (existingPerson) {
-      return Person.findByIdAndUpdate(existingPerson._id, { number }).then(
-        (updatedPerson) => response.json(updatedPerson)
-      );
-    }
-  });
-});
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "Invalid or malformatted ID" });
+  }
+  next(error);
+};
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
