@@ -28,8 +28,8 @@ const personSchema = new mongoose.Schema({
         // 2-3 digits - at least 4 digits
         return /^\d{2,3}-\d{4,}/.test(v);
       },
-      message:
-        "The phone number should have 2-3 digits, a hyphen, and at least 4 digits. (e.g., 867-5309)",
+      message: (props) =>
+        `${props.value} is not a valid phone number! Phone number should be e.g., 02-23053 or 867-5309`,
     },
   },
 });
