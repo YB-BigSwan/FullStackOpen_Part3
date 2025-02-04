@@ -7,7 +7,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:ui": "rm -rf dist && cd ../FullStackOpen/part3/phonebook/ && npm run build && cp -r dist ../../../FullStackOpen_Part3"
+    "build:ui": "rm -rf dist && cd ../FullStackOpen/part3/phonebook/ && npm run build && cp -r dist ../../../FullStackOpen_Part3",
+    "lint": "eslint ."
   },
   "author": "Stephen Swanson",
   "license": "MIT",
@@ -18,5 +19,11 @@
     "mongoose": "^8.9.6",
     "morgan": "^1.10.0",
     "nodemon": "^3.1.9"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@stylistic/eslint-plugin-js": "^3.0.1",
+    "eslint": "^9.19.0",
+    "globals": "^15.14.0"
   }
 }
