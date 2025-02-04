@@ -1,6 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+const Person = require("./models/person");
 const app = express();
 
 let contacts = require("./phonebook.json");
@@ -36,26 +38,43 @@ app.get("/info", (request, response) => {
 
 // Get all
 app.get("/api/persons", (request, response) => {
-  response.json(contacts);
+  Person.find({}).then((persons) => {
+    response.json(persons);
+  });
 });
 
 // Get by ID
 app.get("/api/persons/:id", (request, response) => {
   const id = request.params.id;
-  const contact = contacts.find((contact) => contact.id === id);
-  if (contact) {
-    response.json(contact);
-  } else {
-    response.status(404).end();
-  }
+  const person = Person.findById(id)
+    .then((person) => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      response.status(400).send({ error: "Invalid or malformed ID" });
+    });
 });
 
 // Delete by ID
 app.delete("/api/persons/:id", (request, response) => {
   const id = request.params.id;
-  contacts = contacts.filter((contact) => contact.id !== id);
-
-  response.status(204).end();
+  Person.findByIdAndDelete(id)
+    .then((result) => {
+      if (result) {
+        response.status(204).end();
+      } else {
+        response.status(404).send({ error: "Person not found" });
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      response.status(400).send({ error: "Invalid or malformed ID" });
+    });
 });
 
 // ID gen
@@ -81,41 +100,35 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const contact = {
-    id: generateId(),
+  const person = new Person({
     name: body.name,
     number: body.number,
-  };
+  });
 
-  contacts = contacts.concat(contact);
-
-  response.json(contact);
+  person.save().then((savedPerson) => {
+    response.json(savedPerson);
+  });
 });
 
 // Update
 app.put("/api/persons/:id", (request, response) => {
   const id = request.params.id;
-  const body = request.body;
+  const { name, number } = request.body;
 
-  if (!body.name || !body.number) {
+  if (!name || !number) {
     return response.status(400).json({ error: "Name or number is missing" });
   }
-  const contactIndex = contacts.findIndex((contact) => contact.id === id);
-  const isDuplicate = contacts.find((contact) => contact.name === body.name);
 
-  if (isDuplicate) {
-    const updatedContact = {
-      ...contacts[contactIndex],
-      name: body.name,
-      number: body.number,
-    };
-    contacts[contactIndex] = updatedContact;
-
-    response.json(updatedContact);
-  }
+  Person.findOne({ name }).then((existingPerson) => {
+    if (existingPerson) {
+      return Person.findByIdAndUpdate(existingPerson._id, { number }).then(
+        (updatedPerson) => response.json(updatedPerson)
+      );
+    }
+  });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
